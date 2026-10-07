@@ -1,0 +1,52 @@
+{
+	"version": 1,
+	"named_parameters": true,
+	"parameters": [
+		{
+			"id": "sSydqZ0rF2lGKIQY",
+			"name": "Skill slugs or URLs",
+			"param_name": "skills",
+			"type": "text",
+			"value_type": "string",
+			"required": true
+		},
+		{
+			"id": "GtF3l0E2hclzTaO0",
+			"name": "Your Code Ocean email",
+			"param_name": "git_user",
+			"type": "text",
+			"value_type": "string",
+			"required": true
+		},
+		{
+			"id": "FoJYLdd2ZdiLoGxU",
+			"name": "Source deployment URL",
+			"param_name": "source_host",
+			"type": "text",
+			"value_type": "string"
+		},
+		{
+			"id": "oG0QpxB6aUuZ3g9q",
+			"name": "Only skills tagged (optional)",
+			"param_name": "keyword",
+			"type": "text",
+			"value_type": "string"
+		},
+		{
+			"id": "knbyEME0pOmMRJZN",
+			"name": "Bundle folder name",
+			"param_name": "bundle",
+			"type": "text",
+			"value_type": "string",
+			"default_value": "migrated-skills"
+		},
+		{
+			"id": "ICpohhcgfmzfgvP9",
+			"name": "Token env var name",
+			"param_name": "token_env",
+			"type": "text",
+			"value_type": "string",
+			"default_value": "SRC_CO_TOKEN"
+		}
+	]
+}

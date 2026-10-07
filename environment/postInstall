@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -e
+# Optional: trust extra certificate authorities, such as a company's internal CA, so git can reach a
+# source deployment whose certificate chains to them. Set EXTRA_CA_CERT_URLS in the environment to
+# space-separated certificate URLs (PEM or DER) and rebuild. Left empty, this step does nothing.
+if [ -z "${EXTRA_CA_CERT_URLS:-}" ]; then
+  echo "EXTRA_CA_CERT_URLS is empty; no extra CA certificates to install."
+  exit 0
+fi
+mkdir -p /usr/local/share/ca-certificates/extra
+cd /usr/local/share/ca-certificates/extra
+i=0
+for url in $EXTRA_CA_CERT_URLS; do
+  i=$((i + 1))
+  f="extra-ca-$i.crt"
+  curl -fsSL -o "$f" "$url"
+  # update-ca-certificates needs PEM; convert any certificate served as DER. Keep -inform PEM: without it,
+  # OpenSSL 3 also reads DER here, the conversion is skipped and the certificate is silently not trusted.
+  openssl x509 -inform PEM -in "$f" -noout 2>/dev/null || { openssl x509 -inform DER -in "$f" -out "$f.pem" && mv "$f.pem" "$f"; }
+  subject=$(openssl x509 -inform PEM -in "$f" -noout -subject) || { echo "$url did not return a PEM or DER certificate" >&2; exit 1; }
+  echo "Installing $url as $f: $subject"
+done
+update-ca-certificates

@@ -1,0 +1,42 @@
+{
+	"version": 1,
+	"base_image": "codeocean/ubuntu:22.04",
+	"post_install": true,
+	"options": {
+		"registry_host_arg": true,
+		"git_ask_pass": true,
+		"mount_secrets": true
+	},
+	"installers": {
+		"apt": {
+			"packages": [
+				{
+					"name": "ca-certificates"
+				},
+				{
+					"name": "curl"
+				},
+				{
+					"name": "git"
+				},
+				{
+					"name": "openssl"
+				},
+				{
+					"name": "python3"
+				},
+				{
+					"name": "python3-yaml"
+				}
+			]
+		}
+	},
+	"env_variables": [
+		{
+			"name": "SRC_HOST"
+		},
+		{
+			"name": "EXTRA_CA_CERT_URLS"
+		}
+	]
+}
