@@ -6,7 +6,7 @@ Copies your Aqua skills from another Code Ocean deployment (the **source**) into
 
 1. **Create a token on the source deployment.** Account → Access tokens, with **Capsule read** scope.
 2. **Save it as a secret on this deployment.** Account → Secrets, Custom Key type.
-3. **Attach it to this capsule.** On your first run, Code Ocean shows “Missing Credentials”. Choose **Fix Credentials** and pick your secret. Every user picks their own; nobody else's secret is ever used for your run. Viewers can do this too.
+3. **Attach it to this capsule.** Code Ocean won't run the capsule until the `SRC_CO_TOKEN` slot has a secret. On your first run it shows “Missing Credentials”. Choose **Fix Credentials** and pick your secret. Every user picks their own; nobody else's secret is ever used for your run. Viewers can do this too.
 
    The capsule reads the token from the env var named in `token_env` (default `SRC_CO_TOKEN`).
 

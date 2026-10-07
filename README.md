@@ -18,11 +18,12 @@ Code Ocean's public API can't list or create skills, so a person copies the slug
 
 ## Set it up on a Code Ocean deployment
 
-1. **Create the capsule from this repository.** In Aqua: “Create a new capsule by copying this Git repository: https://github.com/codeocean-nate/skill-packer. Keep it independent of the repository.” Or use the **Copy from Git** option in the Create menu.
-2. **Point it at your source deployment.** Set the `SRC_HOST` environment variable to `https://<source-host>`, or set a default for the `source_host` App Panel parameter.
-3. **If the source uses an internal CA,** set `EXTRA_CA_CERT_URLS` to the CA certificates' URLs, separated by spaces, and rebuild the environment. `environment/postInstall` installs them.
-4. **Check the network path:** run it once on one of your own skills, as a reproducible run. See `code/README.md` for what each failure means.
-5. **Share or release it.** Each user attaches their own source token as a secret. The capsule ships with an empty `SRC_CO_TOKEN` slot.
+1. **Create the capsule from this repository.** In Aqua: “Create a new capsule named skill-packer by copying this Git repository: https://github.com/codeocean-nate/skill-packer. Use the repository as the starting point, but create an independent capsule that is not linked to the Git repository. Tell me its slug and UUID.” Or use **Copy from Git** in the Create menu. Everything comes across: code, environment, App Panel and an empty `SRC_CO_TOKEN` secret slot.
+2. **Attach your source token right away.** Create an API token on the source deployment (Capsule read scope), save it as a secret on this deployment, and attach it to the `SRC_CO_TOKEN` slot (Environment → Secrets), then commit. Code Ocean won't build or run the capsule while a declared secret slot is empty, and Aqua can't attach secrets.
+3. **Point it at your source deployment.** Set the `SRC_HOST` environment variable to `https://<source-host>`, or set a default for the `source_host` App Panel parameter.
+4. **If the source uses an internal CA,** set `EXTRA_CA_CERT_URLS` to the CA certificates' URLs, separated by spaces, and rebuild the environment. `environment/postInstall` installs them and logs each certificate's subject.
+5. **Check the network path:** run it once on one of your own skills, as a reproducible run. See `code/README.md` for what each failure means.
+6. **Share or release it.** Each user attaches their own source token to the slot on their first run.
 
 Full usage, parameters, skip reasons, the Aqua prompt and the checksum check are in [`code/README.md`](code/README.md).
 

@@ -13,7 +13,9 @@ i=0
 for url in $EXTRA_CA_CERT_URLS; do
   i=$((i + 1))
   f="extra-ca-$i.crt"
-  curl -fsSL -o "$f" "$url"
+  # Certificates are often published over plain HTTP that may redirect to HTTPS signed by the very CA being
+  # installed. If the verified download fails, retry without TLS verification; check the subjects logged below.
+  curl -fsSL -o "$f" "$url" || { echo "Verified download failed for $url; retrying without TLS verification" >&2; curl -fsSLk -o "$f" "$url"; }
   # update-ca-certificates needs PEM; convert any certificate served as DER. Keep -inform PEM: without it,
   # OpenSSL 3 also reads DER here, the conversion is skipped and the certificate is silently not trusted.
   openssl x509 -inform PEM -in "$f" -noout 2>/dev/null || { openssl x509 -inform DER -in "$f" -out "$f.pem" && mv "$f.pem" "$f"; }
