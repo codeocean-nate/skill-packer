@@ -1,0 +1,9 @@
+# Streamlit settings for Skill Bridge. No port or base URL: the Cloud Workstation chooses them.
+# Streamlit reads this file from the folder it is launched in; elsewhere, set
+# STREAMLIT_BROWSER_GATHER_USAGE_STATS=false and STREAMLIT_CLIENT_TOOLBAR_MODE=viewer instead.
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "viewer"
