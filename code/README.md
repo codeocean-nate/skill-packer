@@ -26,7 +26,7 @@ On the source deployment, open **My Skills** and copy each skill's URL (`…/cap
 | Field | Parameter | Required | What to enter |
 |---|---|---|---|
 | Skill slugs or URLs | `skills` | yes | Slugs or pasted URLs, separated by spaces, commas or new lines |
-| Your Code Ocean email | `git_user` | yes | The email of the account that owns the token. Git rejects any other username (`remote: user not found`). |
+| Your Code Ocean email (optional) | `git_user` | no | Leave empty: the packer looks up the token owner's email, which Git needs as the username. Set it only if the lookup fails (you own no capsules or data assets on the source) |
 | Source deployment URL | `source_host` | no | `https://<source-host>`. Defaults to the `SRC_HOST` environment variable |
 | Only skills tagged (optional) | `keyword` | no | Pack only skills whose `metadata.tags` include this tag (not case-sensitive) |
 | Bundle folder name | `bundle` | no | Defaults to `migrated-skills` |
@@ -34,7 +34,7 @@ On the source deployment, open **My Skills** and copy each skill's URL (`…/cap
 
 **Or ask Aqua:**
 
-> Run the Skill Packer capsule /capsule/&lt;this capsule's slug&gt; with skills = 1234567 7654321 and git_user = you@company.com. Tell me which skills it packed and which it skipped.
+> Run the Skill Packer capsule /capsule/&lt;this capsule's slug&gt; with skills = 1234567, 7654321. Tell me which skills it packed and which it skipped.
 
 The run usually takes a few seconds.
 
@@ -62,7 +62,7 @@ Skipped items always come with a reason. The run never stops because of one bad 
 | `no SKILL.md in the repo; not a skill (regular capsule?)` | You pasted a regular capsule's slug. Copy the slug from **My Skills** instead |
 | `not tagged <keyword>` | Expected when you set a keyword |
 | `duplicate name; already packed from <slug>` | Two sources have a skill with the same name. Only the first is packed |
-| `clone failed: remote: user not found` | `git_user` doesn't match the token's owner |
+| `clone failed: remote: user not found` | `git_user` was set and doesn't match the token's owner. Leave it empty |
 | `clone failed: …capsule not found` or another auth error | Wrong slug, or your token can't read that skill |
 | `clone failed: … SSL certificate problem` | The source uses a CA this capsule doesn't trust. See “Customize” below |
 | `clone failed: … Failed to connect` or `timed out` | This deployment can't reach the source. A network rule is needed |
@@ -110,4 +110,4 @@ Every line should say `OK`. For Git authentication, the username is your email a
 
 **Before rolling out, check that this deployment can reach the source** with a reproducible run, not only a workstation, because their network rules can differ. Run the packer on one of your own skills and read the output; the table in step 3 tells you what each failure means.
 
-Environment: `codeocean/ubuntu:22.04` with apt packages `ca-certificates`, `curl`, `git`, `openssl`, `python3` and `python3-yaml`. The App Panel uses named parameters, which reach the script as `--name=value`, with empty optional fields left out. `skill_packer.py` needs Python 3.9+ and PyYAML.
+Environment: `codeocean/ubuntu:22.04` with apt packages `ca-certificates`, `curl`, `git`, `openssl`, `python3` and `python3-yaml`. The App Panel uses named parameters, which reach the script as `--name=value`, with empty optional fields left out. The email lookup uses the public API: a capsule or data asset search limited to `ownership: private` returns only the token owner's items, each with `owner_email`; the API has no “whoami” endpoint. `skill_packer.py` needs Python 3.9+ and PyYAML.

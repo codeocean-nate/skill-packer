@@ -36,7 +36,7 @@ Full usage, parameters, skip reasons, the Aqua prompt and the checksum check are
 | `code/README.md` | User guide shown in the capsule |
 | `environment/postInstall` | Installs extra CA certificates from `EXTRA_CA_CERT_URLS`; does nothing when it's empty |
 | `.codeocean/environment.json` | `codeocean/ubuntu:22.04` with ca-certificates, curl, git, openssl, python3, python3-yaml; env vars `SRC_HOST`, `EXTRA_CA_CERT_URLS` |
-| `.codeocean/app-panel.json` | Named parameters: `skills`, `git_user`, `source_host`, `keyword`, `bundle`, `token_env` |
+| `.codeocean/app-panel.json` | Named parameters: `skills` (required), `git_user` (looked up from the token when empty), `source_host`, `keyword`, `bundle`, `token_env` |
 | `.codeocean/secrets.json` | An empty secret slot, `SRC_CO_TOKEN`. No values |
 
 ## Limits

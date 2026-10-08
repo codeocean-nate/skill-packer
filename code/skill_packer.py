@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 # Skill Packer: clone skills from a source Code Ocean deployment and write them
 # to /results in Claude plugin layout, ready for Aqua to unpack into skills.
-import argparse, atexit, datetime, hashlib, json, os, pathlib, re, shutil, subprocess, sys, tempfile
+import argparse, atexit, base64, datetime, hashlib, json, os, pathlib, re, shutil, subprocess, sys, tempfile
+import urllib.request
 from urllib.parse import urlsplit
 import yaml
 
 # App Panel named parameters arrive as --name value, so an empty optional field can't shift the rest.
 ap = argparse.ArgumentParser(description="Pack Code Ocean skills into a Claude plugin layout.")
 ap.add_argument("--skills", required=True, help="slugs or /capsule/NNNNNNN URLs")
-ap.add_argument("--git_user", required=True, help="the token owner's email")
+ap.add_argument("--git_user", default="", help="the token owner's email; looked up from the token when empty")
 ap.add_argument("--keyword", default="", help="optional tag filter")
 ap.add_argument("--bundle", default="migrated-skills", help="output folder and plugin name")
 ap.add_argument("--source_host", default="", help="source deployment URL; defaults to the SRC_HOST env var")
@@ -25,6 +26,35 @@ if not os.environ.get(token_env):
 os.environ["SRC_CO_TOKEN"] = os.environ[token_env]            # the git credential helper reads SRC_CO_TOKEN
 if not re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", bundle):
     sys.exit(f"bundle must be lowercase letters, digits and hyphens (e.g. team-dev-skills), got {bundle!r}")
+
+def token_owner_email():
+    # The API has no "whoami". Everything a search for "ownership: private" returns belongs to the
+    # token's owner, so the first owned capsule or data asset gives us the owner's email.
+    auth = "Basic " + base64.b64encode((os.environ["SRC_CO_TOKEN"] + ":").encode()).decode()
+    errors = []
+    for kind in ("capsules", "data_assets"):
+        req = urllib.request.Request(f"{SRC}/api/v1/{kind}/search", method="POST",
+                                     data=json.dumps({"ownership": "private", "limit": 1}).encode(),
+                                     headers={"Authorization": auth, "Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                found = (json.load(r).get("results") or [{}])[0].get("owner_email")
+        except Exception as e:
+            errors.append(f"{kind} search: {e}")
+            continue
+        if found:
+            return found, errors
+    return "", errors
+
+if not git_user:
+    git_user, errors = token_owner_email()
+    if not git_user:
+        why = ("the source rejected the token (" + "; ".join(errors) + "). Check the secret"
+               if any("401" in e or "403" in e for e in errors)
+               else "; ".join(errors) if errors else "you own no capsules or data assets on the source")
+        sys.exit(f"Couldn't work out your email from the token: {why}. "
+                 "Or set git_user to the email of the account that owns the token.")
+    print(f"Using git_user {git_user}, the owner of the source token.")
 os.environ.update(SRC_CO_USER=git_user, GIT_TERMINAL_PROMPT="0")  # git wants the token owner's email
 RESULTS = pathlib.Path(os.environ.get("RESULTS_DIR", "/results"))       # override for local tests
 out, work = RESULTS / bundle, pathlib.Path(tempfile.mkdtemp())

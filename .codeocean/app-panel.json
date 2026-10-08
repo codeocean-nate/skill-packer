@@ -12,11 +12,10 @@
 		},
 		{
 			"id": "GtF3l0E2hclzTaO0",
-			"name": "Your Code Ocean email",
+			"name": "Your Code Ocean email (optional)",
 			"param_name": "git_user",
 			"type": "text",
-			"value_type": "string",
-			"required": true
+			"value_type": "string"
 		},
 		{
 			"id": "FoJYLdd2ZdiLoGxU",
