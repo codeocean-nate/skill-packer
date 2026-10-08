@@ -218,16 +218,6 @@ def test_no_packer_id_uses_placeholder(env, fakes, monkeypatch):
     assert not any(b.key == "run_packer" for b in at.button)
 
 
-def test_custom_env_var_names(env, fakes, monkeypatch):
-    monkeypatch.delenv("SRC_CO_TOKEN")
-    monkeypatch.setenv("MY_SOURCE_SECRET", FAKE_SRC_TOKEN)
-    at = app()
-    assert at.button(key="load_src").disabled
-    at.text_input(key="src_env").input("MY_SOURCE_SECRET").run()
-    assert not at.button(key="load_src").disabled
-    assert any("Token found in `MY_SOURCE_SECRET`" in c.value for c in at.caption)
-
-
 def test_streamlit_app_entry_point(env, fakes):
     at = AppTest.from_file(str(APP_DIR / "streamlit_app.py"), default_timeout=30).run()
     assert not at.exception and at.title[0].value == "Skill Bridge"

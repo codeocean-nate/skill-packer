@@ -2,7 +2,7 @@
 
 Run with:  streamlit run app.py
 Configuration (environment variables or capsule secrets): SRC_HOST, SRC_CO_TOKEN, DST_HOST, DST_CO_TOKEN,
-PACKER_CAPSULE_ID. The sidebar can override the hosts and the env var names. Token values are never shown.
+PACKER_CAPSULE_ID. The target defaults to the deployment serving the app. Token values are never shown.
 """
 from __future__ import annotations
 
@@ -23,28 +23,12 @@ for key, default in {"rows": {}, "order": [], "sel": {}, "src_host_loaded": "", 
 ROUGHLY = "This usually takes about 30 seconds."
 
 
-def reset_all():
-    for key in ("rows", "order", "sel", "src_host_loaded", "src_listing", "tgt", "run", "git_users", "flash",
-                "verify"):
-        ss.pop(key, None)
-    ss.editor_ver = ss.get("editor_ver", 0) + 1
-
-
 def host_or_error(value: str, label: str) -> str:
     try:
         return sb.normalize_host(value)
     except sb.BridgeError as e:
-        st.sidebar.error(f"{label}: {e}")
+        st.error(f"{label}: {e}")
         return ""
-
-
-def token_note(env_name: str) -> str:
-    name = (env_name or "").strip()
-    if not name:
-        return "No env var name set."
-    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,63}", name) or name.lower().startswith("cop_"):  # a pasted token
-        return "Enter the name of the environment variable that holds the token, not the token itself."
-    return f"Token found in `{name}`." if sb.Config.token(name) else f"`{name}` is empty or not set."
 
 
 def size(n: int) -> str:
@@ -64,23 +48,11 @@ def this_deployment() -> str:
     return origin.rstrip("/") if re.fullmatch(r"https://[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+", origin.rstrip("/")) else ""
 
 
-with st.sidebar:
-    st.header("Settings")
-    src_host = host_or_error(st.text_input("Source deployment URL", value=cfg.src_host, key="src_host_in",
-                                           help="Where your skills are now, e.g. https://codeocean.dev.example.com"),
-                             "Source")
-    src_env = st.text_input("Source token env var", value=cfg.src_token_env, key="src_env",
-                            help="The environment variable (or capsule secret) that holds your source API token.")
-    st.caption(token_note(src_env))
-    dst_host = host_or_error(st.text_input("Target deployment URL", value=cfg.dst_host or this_deployment(), key="dst_host_in",
-                                           help="Where the copies go."), "Target")
-    dst_env = st.text_input("Target token env var", value=cfg.dst_token_env, key="dst_env",
-                            help="Optional. With a target token the app can check which skills the target already "
-                                 "has and run the Skill Packer for you.")
-    st.caption(token_note(dst_env))
-    packer_id = st.text_input("Skill Packer capsule ID (on the target)", value=cfg.packer_id, key="packer_id",
-                              help="The UUID of the Skill Packer capsule on the target deployment.").strip()
-    st.button("Clear loaded results", key="clear", on_click=reset_all)
+# Everything comes from the capsule's environment: SRC_HOST, SRC_CO_TOKEN, PACKER_CAPSULE_ID and, optionally,
+# DST_CO_TOKEN. The target is the deployment serving this app unless DST_HOST says otherwise.
+src_host = host_or_error(cfg.src_host, "Source deployment (SRC_HOST)")
+dst_host = host_or_error(cfg.dst_host or this_deployment(), "Target deployment")
+src_env, dst_env, packer_id = cfg.src_token_env, cfg.dst_token_env, cfg.packer_id.strip()
 
 src_tok, dst_tok = sb.Config.token(src_env), sb.Config.token(dst_env)
 
