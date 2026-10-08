@@ -42,6 +42,8 @@ def token_note(env_name: str) -> str:
     name = (env_name or "").strip()
     if not name:
         return "No env var name set."
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,63}", name) or name.lower().startswith("cop_"):  # a pasted token
+        return "Enter the name of the environment variable that holds the token, not the token itself."
     return f"Token found in `{name}`." if sb.Config.token(name) else f"`{name}` is empty or not set."
 
 
@@ -321,9 +323,12 @@ else:
                                               token_env_param)
                 st.write("Parameters: " + ", ".join(p["param_name"] for p in params))
                 line = st.empty()
-                res = sb.run_packer(dst, packer_id, params,
-                                    on_update=lambda c: line.write(f"Computation `{c.get('id')}`: "
-                                                                   f"{c.get('state')}"))
+
+                def progress(c):
+                    ss.run_started = c.get("id")      # kept even if the page reruns before the run finishes
+                    line.write(f"Computation `{c.get('id')}`: {c.get('state')}")
+
+                res = sb.run_packer(dst, packer_id, params, on_update=progress)
                 ss.run = res
                 status.update(label="Packer run finished" if res["ok"] else "Packer run finished with problems",
                               state="complete" if res["ok"] else "error", expanded=False)
@@ -332,6 +337,10 @@ else:
                 st.error(str(e))
 
 run = ss.run
+started = ss.get("run_started")
+if started and not (run and run.get("id") == started):
+    st.info(f"A packer run was started: computation `{started}`. If this page was interrupted, find it in "
+            "Code Ocean, then use its ID in section 4.")
 if run:
     st.markdown(f"**Packer run** `{run['id']}` · state {run['state']} · exit code {run['exit_code']}"
                 + (f" · {run['run_time']} s" if run.get("run_time") is not None else ""))
