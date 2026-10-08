@@ -10,16 +10,14 @@ My Skills ── git clone ──▶  /results/migrated-skills/  ── reads �
                               README.md, CHANGELOG.md, SHA256SUMS
 ```
 
-1. On the source deployment, get the slugs of the skills you want. Either copy them from **My Skills**, or ask source Aqua: “Activate every skill in your available-skills list with your skills tool, one call per skill. For each, report the UUID of the capsule its SKILL.md was loaded from (or 'none' if it was not loaded from a capsule). Then call get_capsule on each such UUID and report the capsule's name and slug as a JSON array. Do not create, change or delete anything.” Aqua only finds enabled skills.
+1. On the source deployment, get the slugs of the skills you want. Either copy them from **My Skills**, or ask source Aqua: “Activate every skill in your available-skills list with your skills tool, one call per skill. For each, report the UUID of the capsule its SKILL.md was loaded from (or 'none' if it was not loaded from a capsule). Then call get_capsule on each such UUID and report the capsule's name and slug as a JSON array. Do not create, change or delete anything.” It lists your enabled skills.
 2. Run this capsule on the destination with those slugs. It clones each skill over Git and writes them in Claude plugin layout, with a checksum for every file.
 3. Ask Aqua on the destination to create one skill per packed folder, then check the copies against `SHA256SUMS`.
-
-Code Ocean's public API can't list or create skills, so Aqua or a person finds the slugs (step 1) and Aqua creates the skills (step 3).
 
 ## Set it up on a Code Ocean deployment
 
 1. **Create the capsule from this repository.** In Aqua: “Create a new capsule named skill-packer by copying this Git repository: https://github.com/codeocean-nate/skill-packer. Use the repository as the starting point, but create an independent capsule that is not linked to the Git repository. Tell me its slug and UUID.” Or use **Copy from Git** in the Create menu. Everything comes across: code, environment, App Panel and an empty `SRC_CO_TOKEN` secret slot.
-2. **Attach your source token right away.** Create an API token on the source deployment (Capsule read scope), save it as a secret on this deployment, and attach it to the `SRC_CO_TOKEN` slot (Environment → Secrets), then commit. Code Ocean won't build or run the capsule while a declared secret slot is empty, and Aqua can't attach secrets.
+2. **Attach your source token right away.** Create an API token on the source deployment (Capsule read scope), save it as a secret on this deployment, and attach it to the `SRC_CO_TOKEN` slot (Environment → Secrets), then commit. Do this before building or running it.
 3. **Point it at your source deployment.** Set the `SRC_HOST` environment variable to `https://<source-host>`, or set a default for the `source_host` App Panel parameter.
 4. **If the source uses an internal CA,** set `EXTRA_CA_CERT_URLS` to the CA certificates' URLs, separated by spaces, and rebuild the environment. `environment/postInstall` installs them and logs each certificate's subject.
 5. **Check the network path:** run it once on one of your own skills, as a reproducible run. See `code/README.md` for what each failure means.
@@ -39,9 +37,9 @@ Full usage, parameters, skip reasons, the Aqua prompt and the checksum check are
 | `.codeocean/app-panel.json` | Named parameters: `skills` (required), `git_user` (looked up from the token when empty), `source_host`, `keyword`, `bundle`, `token_env` |
 | `.codeocean/secrets.json` | An empty secret slot, `SRC_CO_TOKEN`. No values |
 
-## Limits
+## Good to know
 
-- Aqua recreates skills by retyping text: text files only, no executable bits, roughly 12 KB a minute. Always check against `SHA256SUMS`.
-- Skills must be committed on the source.
-- Copies belong to the user who runs the migration. Sharing settings don't carry over.
+- Text files copy as-is. If a skill includes binary files or executable scripts, check them after copying, and compare every skill against `SHA256SUMS`.
+- Commit skills on the source before copying them.
+- Copies belong to the user who runs the migration. Share them as needed on the destination.
 - Skills are instructions Aqua follows. Only copy skills you trust.

@@ -6,18 +6,18 @@ Copies your Aqua skills from another Code Ocean deployment (the **source**) into
 
 1. **Create a token on the source deployment.** Account → Access tokens, with **Capsule read** scope.
 2. **Save it as a secret on this deployment.** Account → Secrets, Custom Key type.
-3. **Attach it to this capsule.** Code Ocean won't run the capsule until the `SRC_CO_TOKEN` slot has a secret. On your first run it shows “Missing Credentials”. Choose **Fix Credentials** and pick your secret. Every user picks their own; nobody else's secret is ever used for your run. Viewers can do this too.
+3. **Attach it to this capsule.** On your first run, choose **Fix Credentials** and pick your secret for the `SRC_CO_TOKEN` slot. Every user picks their own; nobody else's secret is ever used for your run. Viewers can do this too.
 
    The capsule reads the token from the env var named in `token_env` (default `SRC_CO_TOKEN`).
 
-> **Capsule owners:** attaching or changing a secret slot leaves `.codeocean/secrets.json` uncommitted. Commit it right away, or Git pushes to this capsule fail with `403 … uncommitted changes in the Code Ocean IDE`. The file holds only the slot name, never the token.
+> **Capsule owners:** commit right after attaching or changing a secret slot. The change is recorded in `.codeocean/secrets.json`, which holds only the slot name, never the token.
 
 ## 1. Find the skills to copy
 
 On the source deployment, open **My Skills** and copy each skill's URL (`…/capsule/1234567/tree`) or just its 7-digit slug. Filter by tag first if you only want some.
 
-- Or ask Aqua on the source deployment. Only this wording works, because asking for a plain list makes Aqua search capsules, and that search never returns skills: “Activate every skill in your available-skills list with your skills tool, one call per skill. For each, report the UUID of the capsule its SKILL.md was loaded from (or 'none' if it was not loaded from a capsule). Then call get_capsule on each such UUID and report the capsule's name and slug as a JSON array. Do not create, change or delete anything.” It only finds skills that are enabled.
-- A skill must be **committed** on the source. A skill that was never committed has an empty Git history and is skipped.
+- Or ask Aqua on the source deployment, using exactly this wording: “Activate every skill in your available-skills list with your skills tool, one call per skill. For each, report the UUID of the capsule its SKILL.md was loaded from (or 'none' if it was not loaded from a capsule). Then call get_capsule on each such UUID and report the capsule's name and slug as a JSON array. Do not create, change or delete anything.” It lists your enabled skills.
+- Commit each skill on the source before you copy it.
 
 ## 2. Run the packer
 
@@ -38,7 +38,7 @@ On the source deployment, open **My Skills** and copy each skill's URL (`…/cap
 
 The run usually takes a few seconds.
 
-> **Note:** a run can show **Succeeded** even when it exited with an error. Read the output to see what was packed.
+Read the run's output to see what was packed and what was skipped.
 
 ## 3. What you get
 
@@ -59,7 +59,7 @@ Skipped items always come with a reason. The run never stops because of one bad 
 | Reason | What to do |
 |---|---|
 | `no commits; commit the skill on the source` | Open the skill on the source, commit it, run again |
-| `no SKILL.md in the repo; not a skill (regular capsule?)` | You pasted a regular capsule's slug. Copy the slug from **My Skills** instead |
+| `regular capsule, not a skill (it has a .codeocean folder)` or `no SKILL.md in the repo; not a skill` | That slug isn't a skill. Copy the slug from **My Skills** instead |
 | `not tagged <keyword>` | Expected when you set a keyword |
 | `duplicate name; already packed from <slug>` | Two sources have a skill with the same name. Only the first is packed |
 | `clone failed: remote: user not found` | `git_user` was set and doesn't match the token's owner. Leave it empty |
@@ -76,13 +76,13 @@ Start a new Aqua chat and send this prompt. Fill in the computation ID from step
 
 > Computation &lt;computation id&gt; (a run of the Skill Packer capsule) has results under migrated-skills/ in Claude plugin layout. Read report.json from the results. For each skill in its "packed" list, create a separate stand-alone skill whose files are exact byte-for-byte copies of the files listed in that skill's "paths", keeping each file's path relative to its skill folder. Do not edit, reformat or improve anything. Commit each skill. Report each new skill's name and slug.
 
-Aqua reads each file and writes it into a new skill. Allow about 1 minute per 10–15 KB of files. The new skills belong to you and start Enabled. They aren't shared with anyone, even if the originals were.
+Allow about 1 minute per 10–15 KB of skill files. The new skills belong to you and start Enabled. Share them as needed; sharing on the source doesn't carry over.
 
-> **Name clashes:** if you already have a skill with the same name here, Aqua will have two. Archive or rename one.
+> **Before you start:** check **My Skills** here for skills with the same names, and archive or rename any you're replacing.
 
 ## 5. Check the copies
 
-Aqua copies by retyping text, and once in testing it changed two `—` characters into `â`. Download `migrated-skills/SHA256SUMS` from the packer run's results into a cloud workstation, then compare each new skill against it:
+To confirm each new skill matches the original exactly, download `migrated-skills/SHA256SUMS` from the packer run's results into a cloud workstation, then compare:
 
 ```bash
 git clone https://<this-host>/capsule-<new-skill-slug>.git new-skill
@@ -92,10 +92,10 @@ grep "  skills/<skill-name>/" ../SHA256SUMS | sed "s#  skills/<skill-name>/#  #"
 
 Every line should say `OK`. For Git authentication, the username is your email and the password is an API token for this deployment.
 
-## Limits
+## Good to know
 
-- **Text files only.** Aqua can't recreate binary files, and executable bits are lost. For skills like that, push the packed folder into a skill over Git instead.
-- **Speed:** roughly 12 KB of skill files a minute in the Aqua step. The packer itself takes seconds.
+- **Text files copy as-is.** If a skill includes binary files or executable scripts, check them after copying.
+- **Timing:** the packer takes seconds; creating the skills takes about a minute per 10–15 KB of files.
 - **Skills are instructions Aqua follows.** Read the packed `README.md` and the skills themselves before creating them here, especially skills written by someone else.
 
 ## Customize for your organization (capsule owner)
@@ -110,4 +110,4 @@ Every line should say `OK`. For Git authentication, the username is your email a
 
 **Before rolling out, check that this deployment can reach the source** with a reproducible run, not only a workstation, because their network rules can differ. Run the packer on one of your own skills and read the output; the table in step 3 tells you what each failure means.
 
-Environment: `codeocean/ubuntu:22.04` with apt packages `ca-certificates`, `curl`, `git`, `openssl`, `python3` and `python3-yaml`. The App Panel uses named parameters, which reach the script as `--name=value`, with empty optional fields left out. The email lookup uses the public API: a capsule or data asset search limited to `ownership: private` returns only the token owner's items, each with `owner_email`; the API has no “whoami” endpoint. `skill_packer.py` needs Python 3.9+ and PyYAML.
+Environment: `codeocean/ubuntu:22.04` with apt packages `ca-certificates`, `curl`, `git`, `openssl`, `python3` and `python3-yaml`. The App Panel uses named parameters, which reach the script as `--name=value`, with empty optional fields left out. The email lookup reads `owner_email` from a capsule or data asset search limited to `ownership: private`. `skill_packer.py` needs Python 3.9+ and PyYAML.

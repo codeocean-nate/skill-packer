@@ -118,9 +118,12 @@ for slug in slugs:
     except subprocess.CalledProcessError:
         skipped.append({"slug": slug, "reason": "no commits; commit the skill on the source"})
         continue
+    if (repo / ".codeocean").is_dir():                        # skill repos never have .codeocean/
+        skipped.append({"slug": slug, "reason": "regular capsule, not a skill (it has a .codeocean folder)"})
+        continue
     dirs = skill_dirs(repo)
     if not dirs:
-        skipped.append({"slug": slug, "reason": "no SKILL.md in the repo; not a skill (regular capsule?)"})
+        skipped.append({"slug": slug, "reason": "no SKILL.md in the repo; not a skill"})
     for d in dirs:
         where = "/" + "/".join(d.relative_to(repo).parts)
         fm, why = frontmatter(d)
