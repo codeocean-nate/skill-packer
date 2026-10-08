@@ -16,7 +16,7 @@ Copies your Aqua skills from another Code Ocean deployment (the **source**) into
 
 On the source deployment, open **My Skills** and copy each skill's URL (`…/capsule/1234567/tree`) or just its 7-digit slug. Filter by tag first if you only want some.
 
-- Aqua can't produce this list. It knows your skills by name but can't see their slugs.
+- Or ask Aqua on the source deployment. Only this wording works, because asking for a plain list makes Aqua search capsules, and that search never returns skills: “Activate every skill in your available-skills list with your skills tool, one call per skill. For each, report the UUID of the capsule its SKILL.md was loaded from (or 'none' if it was not loaded from a capsule). Then call get_capsule on each such UUID and report the capsule's name and slug as a JSON array. Do not create, change or delete anything.” It only finds skills that are enabled.
 - A skill must be **committed** on the source. A skill that was never committed has an empty Git history and is skipped.
 
 ## 2. Run the packer

@@ -10,11 +10,11 @@ My Skills ── git clone ──▶  /results/migrated-skills/  ── reads �
                               README.md, CHANGELOG.md, SHA256SUMS
 ```
 
-1. On the source deployment, copy the slugs of the skills you want from **My Skills**.
+1. On the source deployment, get the slugs of the skills you want. Either copy them from **My Skills**, or ask source Aqua: “Activate every skill in your available-skills list with your skills tool, one call per skill. For each, report the UUID of the capsule its SKILL.md was loaded from (or 'none' if it was not loaded from a capsule). Then call get_capsule on each such UUID and report the capsule's name and slug as a JSON array. Do not create, change or delete anything.” Aqua only finds enabled skills.
 2. Run this capsule on the destination with those slugs. It clones each skill over Git and writes them in Claude plugin layout, with a checksum for every file.
 3. Ask Aqua on the destination to create one skill per packed folder, then check the copies against `SHA256SUMS`.
 
-Code Ocean's public API can't list or create skills, so a person copies the slugs (step 1) and Aqua creates the skills (step 3).
+Code Ocean's public API can't list or create skills, so Aqua or a person finds the slugs (step 1) and Aqua creates the skills (step 3).
 
 ## Set it up on a Code Ocean deployment
 
