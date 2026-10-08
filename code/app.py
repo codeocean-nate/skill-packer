@@ -80,15 +80,6 @@ with st.sidebar:
     st.caption(token_note(dst_env))
     packer_id = st.text_input("Skill Packer capsule ID (on the target)", value=cfg.packer_id, key="packer_id",
                               help="The UUID of the Skill Packer capsule on the target deployment.").strip()
-    with st.expander("Advanced"):
-        git_user_in = st.text_input("Source Git username (your email)", key="git_user_in",
-                                    help="Leave empty: the app looks up the source token owner's email.").strip()
-        dst_git_user_in = st.text_input("Target Git username (your email)", key="dst_git_user_in",
-                                        help="Used to check the copies. Leave empty: the app looks up the target "
-                                             "token owner's email.").strip()
-        token_env_param = st.text_input("Packer token_env parameter", key="token_env_param",
-                                        help="The env var name your source-token secret is attached as in the "
-                                             "Skill Packer capsule. Leave empty to use the packer's default.").strip()
     st.button("Clear loaded results", key="clear", on_click=reset_all)
 
 src_tok, dst_tok = sb.Config.token(src_env), sb.Config.token(dst_env)
@@ -107,8 +98,6 @@ if ss.verify and ss.verify["host"] != dst_host:
 
 
 def git_user() -> str:
-    if git_user_in:
-        return git_user_in
     if src_host not in ss.git_users:
         ss.git_users[src_host] = sb.CoClient(src_host, src_tok, "source").owner_email()
     return ss.git_users[src_host]
@@ -320,7 +309,7 @@ else:
                 panel = dst.app_panel(packer_id)
                 needs_user = any(p.get("param_name") == "git_user" and p.get("required") for p in panel)
                 params = sb.packer_parameters(panel, selected, src_host, git_user() if needs_user else "",
-                                              token_env_param)
+                                              "")
                 st.write("Parameters: " + ", ".join(p["param_name"] for p in params))
                 line = st.empty()
 
@@ -398,7 +387,7 @@ if st.button("Check copies", key="verify_copies", disabled=not dst_host):
         try:
             with st.spinner(f"Checking {len(slugs)} new skill{'s' if len(slugs) != 1 else ''} on {dst_host}…"):
                 ss.verify = sb.verify_copies(sb.CoClient(dst_host, verify_tok, "target"), verify_comp, slugs,
-                                             dst_git_user_in, verify_tok)
+                                             "", verify_tok)
         except sb.BridgeError as e:
             st.error(str(e))
 
