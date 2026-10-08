@@ -68,10 +68,16 @@ _COPY_RULES = (
     'byte-for-byte copies of the files listed in that skill\'s "paths", keeping each file\'s path relative to '
     "its skill folder. Do not edit, reformat or improve anything. Commit each skill."
 )
+# Verified wording: Aqua skips packed skills whose names match custom skills the user already has (it checks
+# its own available-skills list), so re-running the same selection creates nothing twice.
 PACK_PROMPT = (
     "Run the Skill Packer capsule {packer} with skills = {slugs}. When it finishes, read report.json from the "
-    "run's results. " + _COPY_RULES + " Then list each new skill's name and slug, the computation ID, and "
-    "anything the packer skipped with its reason."
+    "run's results. Before creating anything, compare each name in its \"packed\" list with the custom skills I "
+    "already have, and skip any packed skill whose name matches one of mine. For each remaining skill, create a "
+    "separate stand-alone skill whose files are exact byte-for-byte copies of the files listed in that skill's "
+    "\"paths\", keeping each file's path relative to its skill folder. Do not edit, reformat or improve anything. "
+    "Commit each skill. Then list each new skill's name and slug, the skills you skipped because I already have "
+    "them, the computation ID, and anything the packer skipped with its reason."
 )
 UNPACK_PROMPT = (
     "Computation {computation} (a run of the Skill Packer capsule) has results under {bundle}/ in Claude plugin "

@@ -7,6 +7,7 @@ PACKER_CAPSULE_ID. The sidebar can override the hosts and the env var names. Tok
 from __future__ import annotations
 
 import hashlib
+import re
 
 import pandas as pd
 import streamlit as st
@@ -52,6 +53,15 @@ def size(n: int) -> str:
 # Sidebar: settings
 
 cfg = sb.Config.from_env()
+def this_deployment() -> str:
+    # The workstation serves this app from the target deployment itself; the browser's Origin header names it.
+    try:
+        origin = st.context.headers.get("Origin") or ""
+    except Exception:
+        return ""
+    return origin.rstrip("/") if re.fullmatch(r"https://[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+", origin.rstrip("/")) else ""
+
+
 with st.sidebar:
     st.header("Settings")
     src_host = host_or_error(st.text_input("Source deployment URL", value=cfg.src_host, key="src_host_in",
@@ -60,7 +70,7 @@ with st.sidebar:
     src_env = st.text_input("Source token env var", value=cfg.src_token_env, key="src_env",
                             help="The environment variable (or capsule secret) that holds your source API token.")
     st.caption(token_note(src_env))
-    dst_host = host_or_error(st.text_input("Target deployment URL", value=cfg.dst_host, key="dst_host_in",
+    dst_host = host_or_error(st.text_input("Target deployment URL", value=cfg.dst_host or this_deployment(), key="dst_host_in",
                                            help="Where the copies go."), "Target")
     dst_env = st.text_input("Target token env var", value=cfg.dst_token_env, key="dst_env",
                             help="Optional. With a target token the app can check which skills the target already "

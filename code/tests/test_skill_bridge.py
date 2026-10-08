@@ -21,11 +21,13 @@ def test_pack_prompt_exact_wording():
     got = sb.build_pack_prompt(["2000001", "0100003"], "c0ffee00-0000-4000-8000-000000000000")
     assert got == (
         "Run the Skill Packer capsule c0ffee00-0000-4000-8000-000000000000 with skills = 2000001, 0100003. When it "
-        "finishes, read report.json from the run's results. For each skill in its \"packed\" list, create a separate "
-        "stand-alone skill whose files are exact byte-for-byte copies of the files listed in that skill's \"paths\", "
-        "keeping each file's path relative to its skill folder. Do not edit, reformat or improve anything. Commit "
-        "each skill. Then list each new skill's name and slug, the computation ID, and anything the packer skipped "
-        "with its reason.")
+        "finishes, read report.json from the run's results. Before creating anything, compare each name in its "
+        "\"packed\" list with the custom skills I already have, and skip any packed skill whose name matches one of "
+        "mine. For each remaining skill, create a separate stand-alone skill whose files are exact byte-for-byte "
+        "copies of the files listed in that skill's \"paths\", keeping each file's path relative to its skill "
+        "folder. Do not edit, reformat or improve anything. Commit each skill. Then list each new skill's name and "
+        "slug, the skills you skipped because I already have them, the computation ID, and anything the packer "
+        "skipped with its reason.")
 
 
 def test_pack_prompt_placeholder_without_packer_id():
