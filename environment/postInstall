@@ -1,25 +1,47 @@
 #!/usr/bin/env bash
 set -e
-# Optional: trust extra certificate authorities, such as a company's internal CA, so git can reach a
-# source deployment whose certificate chains to them. Set EXTRA_CA_CERT_URLS in the environment to
-# space-separated certificate URLs (PEM or DER) and rebuild. Left empty, this step does nothing.
-if [ -z "${EXTRA_CA_CERT_URLS:-}" ]; then
+# Optional build-time extras, each controlled by an environment variable. Leave a variable empty to skip it.
+#   EXTRA_CA_CERT_URLS  space-separated URLs of CA certificates (PEM or DER) to trust, such as a company's internal
+#                       CA, so git, pip and Python can reach hosts whose certificates chain to it.
+#   EXTRA_PIP_PACKAGES  space-separated pip packages to install, e.g. "streamlit" for the Skill Bridge app.
+#   EXTRA_CA_ALLOW_INSECURE  set to 1 to allow downloading a CA certificate without TLS verification when the
+#                       verified download fails (for certificates served over HTTPS signed by that same CA).
+
+if [ -n "${EXTRA_CA_CERT_URLS:-}" ]; then
+  mkdir -p /usr/local/share/ca-certificates/extra
+  cd /usr/local/share/ca-certificates/extra
+  i=0
+  for url in $EXTRA_CA_CERT_URLS; do
+    i=$((i + 1))
+    f="extra-ca-$i.crt"
+    if ! curl -fsSL -o "$f" "$url"; then
+      # A certificate served over HTTPS signed by the CA being installed can't be verified yet. Retry without
+      # verification only when explicitly allowed; check the subjects logged below.
+      if [ "${EXTRA_CA_ALLOW_INSECURE:-0}" = 1 ]; then
+        echo "Verified download failed for $url; retrying without TLS verification (EXTRA_CA_ALLOW_INSECURE=1)" >&2
+        curl -fsSLk -o "$f" "$url"
+      else
+        echo "Couldn't download $url. Check the URL, or set EXTRA_CA_ALLOW_INSECURE=1 to allow an unverified download." >&2
+        exit 1
+      fi
+    fi
+    # update-ca-certificates needs PEM; convert any certificate served as DER. Keep -inform PEM: without it,
+    # OpenSSL 3 also reads DER here, the conversion is skipped and the certificate is silently not trusted.
+    openssl x509 -inform PEM -in "$f" -noout 2>/dev/null || { openssl x509 -inform DER -in "$f" -out "$f.pem" && mv "$f.pem" "$f"; }
+    openssl x509 -inform PEM -in "$f" -noout 2>/dev/null || { echo "$url did not return a PEM or DER certificate" >&2; exit 1; }
+    # Log every certificate in the file (a PEM file can hold a chain).
+    echo "Installing $url as $f:"
+    openssl crl2pkcs7 -nocrl -certfile "$f" | openssl pkcs7 -print_certs -noout | sed -n 's/^subject=/  subject=/p'
+  done
+  update-ca-certificates
+  cd /
+else
   echo "EXTRA_CA_CERT_URLS is empty; no extra CA certificates to install."
-  exit 0
 fi
-mkdir -p /usr/local/share/ca-certificates/extra
-cd /usr/local/share/ca-certificates/extra
-i=0
-for url in $EXTRA_CA_CERT_URLS; do
-  i=$((i + 1))
-  f="extra-ca-$i.crt"
-  # Certificates are often published over plain HTTP that may redirect to HTTPS signed by the very CA being
-  # installed. If the verified download fails, retry without TLS verification; check the subjects logged below.
-  curl -fsSL -o "$f" "$url" || { echo "Verified download failed for $url; retrying without TLS verification" >&2; curl -fsSLk -o "$f" "$url"; }
-  # update-ca-certificates needs PEM; convert any certificate served as DER. Keep -inform PEM: without it,
-  # OpenSSL 3 also reads DER here, the conversion is skipped and the certificate is silently not trusted.
-  openssl x509 -inform PEM -in "$f" -noout 2>/dev/null || { openssl x509 -inform DER -in "$f" -out "$f.pem" && mv "$f.pem" "$f"; }
-  subject=$(openssl x509 -inform PEM -in "$f" -noout -subject) || { echo "$url did not return a PEM or DER certificate" >&2; exit 1; }
-  echo "Installing $url as $f: $subject"
-done
-update-ca-certificates
+
+if [ -n "${EXTRA_PIP_PACKAGES:-}" ]; then
+  # pip ships its own certificate list; use the system store, which includes any CA installed above.
+  PIP_CERT=/etc/ssl/certs/ca-certificates.crt python3 -m pip install --no-cache-dir $EXTRA_PIP_PACKAGES
+else
+  echo "EXTRA_PIP_PACKAGES is empty; no pip packages to install."
+fi

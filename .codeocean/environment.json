@@ -26,6 +26,9 @@
 					"name": "python3"
 				},
 				{
+					"name": "python3-pip"
+				},
+				{
 					"name": "python3-yaml"
 				}
 			]
@@ -37,6 +40,9 @@
 		},
 		{
 			"name": "EXTRA_CA_CERT_URLS"
+		},
+		{
+			"name": "EXTRA_PIP_PACKAGES"
 		}
 	]
 }
