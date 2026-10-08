@@ -1160,7 +1160,9 @@ class Config:
     @classmethod
     def from_env(cls) -> "Config":
         return cls(src_host=os.environ.get("SRC_HOST", ""), dst_host=os.environ.get("DST_HOST", ""),
-                   packer_id=os.environ.get("PACKER_CAPSULE_ID", ""))
+                   # In a Code Ocean workstation CO_CAPSULE_ID is the capsule the app runs in, which is the
+                   # Skill Packer itself (and stays right in a duplicated copy, unlike a copied PACKER_CAPSULE_ID).
+                   packer_id=os.environ.get("CO_CAPSULE_ID") or os.environ.get("PACKER_CAPSULE_ID", ""))
 
     @staticmethod
     def token(env_name: str) -> str:

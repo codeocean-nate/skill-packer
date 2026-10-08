@@ -17,7 +17,7 @@ import skill_bridge as sb
 st.set_page_config(page_title="Skill Bridge", layout="wide")
 ss = st.session_state
 for key, default in {"rows": {}, "order": [], "sel": {}, "src_host_loaded": "", "src_listing": None,
-                     "tgt": None, "editor_ver": 0, "run": None, "git_users": {}, "flash": [], "verify": None}.items():
+                     "tgt": None, "editor_ver": 0, "run": None, "git_users": {}, "flash": []}.items():
     ss.setdefault(key, default)
 
 ROUGHLY = "This usually takes about 30 seconds."
@@ -65,8 +65,6 @@ if ss.tgt and ss.tgt["host"] != dst_host:
     ss.tgt = None
     for r in ss.rows.values():
         r["on_target"] = []
-if ss.verify and ss.verify["host"] != dst_host:
-    ss.verify = None
 
 
 def git_user() -> str:
@@ -323,57 +321,3 @@ if run:
     if run["packed"]:
         st.write(f"Now start a new Aqua chat on {dst_host or 'the target'} and send this prompt to create the skills:")
         st.code(sb.build_unpack_prompt(run["id"], run["bundle"]), language=None, wrap_lines=True)
-
-# ---------------------------------------------------------------------------------------------------------------
-# 4. Check the copies
-
-st.subheader("4. Check the copies")
-st.write("When Aqua has created the new skills, check that every file in them matches the packed original exactly.")
-if run and ss.get("verify_prefill") != run["id"]:          # a packer run started here fills in its ID once
-    ss.verify_comp = run["id"]
-    ss.verify_prefill = run["id"]
-k1, k2 = st.columns([2, 3])
-verify_comp = k1.text_input("Packer computation ID", key="verify_comp",
-                            help="The ID of the Skill Packer run that packed the skills. Aqua's reply includes it.")
-verify_slugs = k2.text_area("New skills' slugs or URLs", key="verify_slugs", height=80,
-                            placeholder="From Aqua's reply, e.g. 1234567, https://<target>/capsule/7654321")
-verify_tok = dst_tok
-if not dst_tok:
-    verify_tok = st.text_input("Target API token", type="password", key="verify_token",
-                               help="Used for this check only and kept only for this browser session.").strip()
-if not dst_host:
-    st.caption("Set the target deployment URL in Settings to check the copies.")
-if st.button("Check copies", key="verify_copies", disabled=not dst_host):
-    ss.verify = None
-    slugs, elsewhere = sb.slugs_on_host(verify_slugs, dst_host)
-    for item in elsewhere:
-        st.warning(f"{item} is not on the target deployment {dst_host}, so it was left out. Use the new skills' "
-                   "slugs or URLs on the target.")
-    if not verify_tok:
-        st.error("Enter your API token for the target deployment.")
-    elif not verify_comp.strip():
-        st.error("Enter the computation ID of the Skill Packer run.")
-    elif not slugs:
-        st.error("Enter the slugs or URLs of the new skills on the target.")
-    else:
-        try:
-            with st.spinner(f"Checking {len(slugs)} new skill{'s' if len(slugs) != 1 else ''} on {dst_host}…"):
-                ss.verify = sb.verify_copies(sb.CoClient(dst_host, verify_tok, "target"), verify_comp, slugs,
-                                             "", verify_tok)
-        except sb.BridgeError as e:
-            st.error(str(e))
-
-checked = ss.verify
-if checked:
-    level, verdict = sb.verify_verdict(checked)
-    getattr(st, level)(verdict)
-    st.dataframe(pd.DataFrame(sb.verify_rows(checked)), hide_index=True,
-                 column_config={"Slug": st.column_config.TextColumn(width="small"),
-                                "Result": st.column_config.TextColumn(width="small"),
-                                "Details": st.column_config.TextColumn(width="large")})
-    exec_note = sb.verify_exec_note(checked)
-    if exec_note:
-        st.warning(exec_note)
-        st.code(sb.exec_fix_commands(checked), language="bash")
-    st.caption(f"Checked against computation `{checked['computation']}` ({checked['bundle']}/SHA256SUMS) on "
-               f"{checked['host']}.")

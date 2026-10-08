@@ -691,3 +691,11 @@ def test_committed_files_reads_blobs_and_reports_missing_objects(tmp_path):
     (work / ".git" / "objects" / oid[:2] / oid[2:]).unlink()
     with pytest.raises(ValueError, match="1 file"):
         sb.committed_files(work, env)
+
+
+def test_packer_id_prefers_the_capsule_the_app_runs_in(monkeypatch):
+    monkeypatch.setenv("PACKER_CAPSULE_ID", "copied-from-the-original")
+    monkeypatch.setenv("CO_CAPSULE_ID", "this-capsule")
+    assert sb.Config.from_env().packer_id == "this-capsule"
+    monkeypatch.delenv("CO_CAPSULE_ID")
+    assert sb.Config.from_env().packer_id == "copied-from-the-original"
